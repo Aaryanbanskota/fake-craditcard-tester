@@ -3,8 +3,8 @@
 Welcome to **Fake Credit Card Tester** – a powerful and lightweight tool built to detect fake credit card numbers using just the **card number** and **CVV**.  
 Created with 💻 by **Aaryan Banskota**, this project is designed for developers, testers, and anyone curious about how fake credit card validation can work.
 
-👉 [**Click here to Live View**](https://your-live-link.com)  
-*(Replace the link above with your actual deployed app link)*
+👉 [**Click here to Live View**](https://aaryanbanskota.github.io/fake-craditcard-tester/)  
+
 
 ---
 
@@ -31,8 +31,7 @@ The tool analyzes the structure and format of the credit card number and CVV:
 
 ## 📷 Live Demo
 
-👉 [**Click here to Live View**](https://your-live-link.com)  
-*(Replace with your actual deployment URL – GitHub Pages, Vercel, Netlify, etc.)*
+👉 [**Click here to Live View**](https://aaryanbanskota.github.io/fake-craditcard-tester/)  
 
 ---
 

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fake Credit Card Detector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="icon" href="https://i.imgur.com/YKmjN3D.png" />
+  <link rel="manifest" href="manifest.json" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(
+        45deg,
+        #8e44ad,
+        #3498db,
+        #e74c3c,
+        #f1c40f,
+        #16a085,
+        #2980b9
+      );
+      background-size: 600% 600%;
+      animation: bgAnim 20s ease infinite;
+      transition: background 0.3s;
+    }
+    @keyframes bgAnim {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+    .app {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 360px;
+      max-width: 95%;
+      padding: 1.8rem 2rem;
+      position: relative;
+      color: #222;
+      transition: background 0.3s, color 0.3s;
+    }
+    .dark {
+      background: #222;
+      color: #eee;
+    }
+    .center {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    img.logo {
+      width: 50px;
+      margin: 0 auto 8px;
+      display: block;
+    }
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    input:focus,
+    select:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      color: #fff;
+      background: #007bff;
+      border: none;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.pdf {
+      background: #28a745;
+    }
+    button.pdf:hover {
+      background: #1e7e34;
+    }
+    .toggle-dark {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 1.6rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+      color: inherit;
+    }
+    .result-card {
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.15rem;
+      margin-top: 0.3rem;
+      min-height: 90px;
+      display: none;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .valid {
+      background: #d4edda;
+      color: #155724;
+      box-shadow: 0 0 12px #28a745aa;
+    }
+    .suspicious {
+      background: #fff3cd;
+      color: #856404;
+      box-shadow: 0 0 12px #ffc107aa;
+    }
+    .fake {
+      background: #f8d7da;
+      color: #721c24;
+      box-shadow: 0 0 12px #dc3545aa;
+    }
+    .icon {
+      font-size: 3rem;
+      margin-bottom: 0.35rem;
+      user-select: none;
+    }
+    .history {
+      margin-top: 1rem;
+      max-height: 120px;
+      overflow-y: auto;
+      border-top: 1px solid #ddd;
+      padding-top: 0.6rem;
+      font-size: 0.85rem;
+    }
+    .history li {
+      padding: 0.25rem 0;
+      border-bottom: 1px solid #eee;
+      word-break: break-all;
+    }
+    .dark input,
+    .dark select {
+      background: #444;
+      color: #eee;
+      border: 1px solid #555;
+    }
+    .dark button {
+      color: #fff;
+    }
+    .dark .history {
+      border-color: #444;
+    }
+    .dark .history li {
+      border-color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <button class="toggle-dark" id="modeBtn" title="Toggle Light/Dark Mode">🌞</button>
+    <div class="center">
+      <img src="https://ibb.co/chJhyWby" alt="Logo" class="logo" />
+      <h2>Fake Credit Card Detector</h2>
+    </div>
+
+    <select id="lang" aria-label="Select language">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+
+    <input
+      type="text"
+      id="cardNumber"
+      inputmode="numeric"
+      placeholder="Card Number"
+      aria-label="Card Number"
+      autocomplete="off"
+      maxlength="19"
+    />
+    <input
+      type="text"
+      id="cvv"
+      inputmode="numeric"
+      placeholder="CVV (e.g. 123)"
+      aria-label="CVV"
+      autocomplete="off"
+      maxlength="4"
+    />
+
+    <button id="checkBtn">Check Card</button>
+    <button class="pdf" id="pdfBtn">Export PDF</button>
+
+    <div id="result" class="result-card"></div>
+
+    <h4 id="historyTitle" style="margin-top: 0.8rem;">Recent Checks</h4>
+    <ul class="history" id="historyList"></ul>
+  </div>
+
+  <script>
+    const langStr = {
+      en: {
+        invalid: 'Invalid card number or CVV format/length',
+        real: 'Card looks real',
+        suspicious: 'Card looks suspicious',
+        fake: 'Card is likely fake',
+        recent: 'Recent Checks',
+        alertPdfEmpty: 'Please check a card before exporting PDF.'
+      },
+      es: {
+        invalid: 'Número de tarjeta o CVV inválido',
+        real: 'La tarjeta parece real',
+        suspicious: 'La tarjeta parece sospechosa',
+        fake: 'La tarjeta es probablemente falsa',
+        recent: 'Comprobaciones recientes',
+        alertPdfEmpty: 'Por favor, verifica una tarjeta antes de exportar PDF.'
+      }
+    };
+
+    // Known test cards and generator prefixes blacklist
+    const knownTestCards = [
+      '4111111111111111',
+      '5555555555554444',
+      '378282246310005',
+      '6011111111111117'
+    ];
+
+    // Known suspicious BIN prefixes often used by generators
+    const suspiciousBins = ['42', '53', '6011', '123456'];
+
+    const app = document.getElementById('app');
+    const cardInput = document.getElementById('cardNumber');
+    const cvvInput = document.getElementById('cvv');
+    const checkBtn = document.getElementById('checkBtn');
+    const pdfBtn = document.getElementById('pdfBtn');
+    const resultEl = document.getElementById('result');
+    const langSelect = document.getElementById('lang');
+    const historyList = document.getElementById('historyList');
+    const historyTitle = document.getElementById('historyTitle');
+    const modeBtn = document.getElementById('modeBtn');
+
+    function sel(id) {
+      return document.getElementById(id);
+    }
+
+    function applyLang() {
+      const l = langSelect.value,
+        s = langStr[l];
+      historyTitle.textContent = s.recent;
+    }
+
+    // Toggle Dark Mode with emoji
+    function toggleMode() {
+      app.classList.toggle('dark');
+      const dark = app.classList.contains('dark');
+      modeBtn.innerText = dark ? '🌜' : '🌞';
+      localStorage.setItem('dark', dark);
+    }
+
+    // Luhn Algorithm
+    function luhn(card) {
+      let sum = 0,
+        doubleUp = false;
+      for (let i = card.length - 1; i >= 0; i--) {
+        let digit = parseInt(card.charAt(i), 10);
+        if (doubleUp) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+        doubleUp = !doubleUp;
+      }
+      return sum % 10 === 0;
+    }
+
+    // Get card type based on BIN prefix
+    function getCardType(card) {
+      if (/^4/.test(card)) return 'Visa';
+      if (/^5[1-5]/.test(card)) return 'MasterCard';
+      if (/^3[47]/.test(card)) return 'Amex';
+      if (/^6/.test(card)) return 'Discover';
+      return 'Unknown';
+    }
+
+    // Suspicious number patterns
+    function hasSuspiciousPattern(card) {
+      // All digits same
+      if (/^(.)\1+$/.test(card)) return true;
+      // Sequential digits
+      const seqAsc = '1234567890';
+      const seqDesc = '0987654321';
+      for (let i = 0; i < card.length - 3; i++) {
+        if (
+          seqAsc.includes(card.substr(i, 4)) ||
+          seqDesc.includes(card.substr(i, 4))
+        )
+          return true;
+      }
+      return false;
+    }
+
+    // Validate CVV based on card type
+    function validCVV(cvv, cardType) {
+      if (!/^\d+$/.test(cvv)) return false;
+      if (cardType === 'Amex') return cvv.length === 4;
+      else return cvv.length === 3;
+    }
+
+    // Check suspicious BIN prefixes
+    function isSuspiciousBIN(card) {
+      const prefix6 = card.slice(0, 6);
+      const prefix4 = card.slice(0, 4);
+      return suspiciousBins.some(
+        (bin) => prefix6.startsWith(bin) || prefix4.startsWith(bin)
+      );
+    }
+
+    // Async function to check BIN via two APIs
+    async function checkBIN(card) {
+      const bin = card.slice(0, 6);
+      try {
+        // Try binlist.net first
+        const r1 = await fetch(`https://lookup.binlist.net/${bin}`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (r1.ok) {
+          const data1 = await r1.json();
+          if (data1 && data1.scheme) return { found: true, data: data1 };
+        }
+      } catch (e) {
+        // ignore and fallback
+      }
+      try {
+        // Fallback to bindb.com API (dummy example: replace with real API key)
+        const r2 = await fetch(
+          `https://api.bindb.com/v1/bin/${bin}?apikey=demo1234567890`
+        );
+        if (r2.ok) {
+          const data2 = await r2.json();
+          if (data2 && data2.scheme) return { found: true, data: data2 };
+        }
+      } catch (e) {
+        // ignore
+      }
+      return { found: false };
+    }
+
+    // Main checker function
+    async function checkCard() {
+      const cardRaw = cardInput.value.replace(/\s+/g, '');
+      const cvv = cvvInput.value.trim();
+      const lang = langSelect.value;
+      const s = langStr[lang];
+
+      // Basic validation
+      if (!/^\d{13,19}$/.test(cardRaw) || !validCVV(cvv, getCardType(cardRaw))) {
+        showResult('fake', s.invalid);
+        return;
+      }
+
+      // Luhn check
+      if (!luhn(cardRaw)) {
+        showResult('fake', s.fake);
+        return;
+      }
+
+      // Check known test cards
+      if (knownTestCards.includes(cardRaw)) {
+        showResult('fake', s.fake);
+        saveHistory(cardRaw, 'fake');
+        return;
+      }
+
+      // Check suspicious BIN
+      if (isSuspiciousBIN(cardRaw)) {
+        showResult('suspicious', s.suspicious);
+        saveHistory(cardRaw, 'suspicious');
+        return;
+      }
+
+      // Check suspicious patterns
+      if (hasSuspiciousPattern(cardRaw)) {
+        showResult('suspicious', s.suspicious);
+        saveHistory(cardRaw, 'suspicious');
+        return;
+      }
+
+      // Check BIN data from APIs
+      const binResult = await checkBIN(cardRaw);
+      if (!binResult.found) {
+        // BIN not found in APIs - suspicious
+        showResult('suspicious', s.suspicious);
+        saveHistory(cardRaw, 'suspicious');
+        return;
+      }
+
+      // All checks passed - mark as real
+      showResult('valid', s.real);
+      saveHistory(cardRaw, 'valid');
+    }
+
+    // Show result
+    function showResult(type, text) {
+      const icons = {
+        valid: '✔️',
+        suspicious: '⚠️',
+        fake: '❌'
+      };
+      resultEl.style.display = 'block';
+      resultEl.className = `result-card ${type}`;
+      resultEl.innerHTML = `<div class="icon">${icons[type]}</div>${text}`;
+    }
+
+    // Save to local storage history (max 10)
+    function saveHistory(card, status) {
+      let history = JSON.parse(localStorage.getItem('cardHistory') || '[]');
+      history.unshift({ card, status, date: new Date().toISOString() });
+      if (history.length > 10) history.pop();
+      localStorage.setItem('cardHistory', JSON.stringify(history));
+      renderHistory();
+    }
+
+    // Render history list
+    function renderHistory() {
+      const lang = langSelect.value;
+      const s = langStr[lang];
+      const history = JSON.parse(localStorage.getItem('cardHistory') || '[]');
+      if (history.length === 0) {
+        historyList.innerHTML = `<li><i>No recent checks</i></li>`;
+        return;
+      }
+      historyList.innerHTML = history
+        .map(
+          (h) =>
+            `<li><b>${h.card}</b> - <span class="${h.status}">${h.status.toUpperCase()}</span> - ${new Date(
+              h.date
+            ).toLocaleString()}</li>`
+        )
+        .join('');
+    }
+
+    // Export to PDF
+    function exportPDF() {
+      if (!resultEl.style.display || resultEl.style.display === 'none') {
+        alert(langStr[langSelect.value].alertPdfEmpty);
+        return;
+      }
+      const opt = {
+        margin: 0.3,
+        filename: 'card_check_report.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(app).save();
+    }
+
+    // Format card input on typing (group by 4)
+    cardInput.addEventListener('input', (e) => {
+      let val = cardInput.value.replace(/\D/g, '').substring(0, 19);
+      val = val.match(/.{1,4}/g)?.join(' ') || '';
+      cardInput.value = val;
+    });
+
+    // CVV input numeric only + max length 4
+    cvvInput.addEventListener('input', (e) => {
+      let val = cvvInput.value.replace(/\D/g, '').substring(0, 4);
+      cvvInput.value = val;
+    });
+
+    // Button listeners
+    checkBtn.addEventListener('click', checkCard);
+    pdfBtn.addEventListener('click', exportPDF);
+    langSelect.addEventListener('change', () => {
+      applyLang();
+      renderHistory();
+    });
+    modeBtn.addEventListener('click', toggleMode);
+
+    // Load theme & history on start
+    window.onload = () => {
+      if (localStorage.getItem('dark') === 'true') {
+        app.classList.add('dark');
+        modeBtn.innerText = '🌜';
+      }
+      applyLang();
+      renderHistory();
+    };
+
+    // PWA support (simple service worker)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('sw.js')
+        .catch(() => console.log('Service Worker registration failed'));
+    }
+  </script>
+</body>
+</html>
